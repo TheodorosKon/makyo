@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { SelectDropdown } from './SelectDropdown';
-import Select from "react-select";
 
 const options = [
     { value: '0', label: 'Option 1' },
@@ -16,8 +15,16 @@ const meta = {
   },
   tags: ['autodocs'],
   argTypes: {
+    id: {
+      control: { type: "text" }
+    },
+    withSeach: {
+      control: { type: "boolean" }
+    },
+    multiple: {
+      control: { type: "boolean" }
+    }
   },
-  //args: { multiple: false },
 } satisfies Meta<typeof SelectDropdown>;
 
 export default meta;
@@ -31,7 +38,7 @@ export const Default: Story = {
     multiple: false,
     optionLabel: 'Label',
     onChange() {
-        
+        //Code to execute on Change of selected items/options
     },
     outlined: false,
     disabled: false,
