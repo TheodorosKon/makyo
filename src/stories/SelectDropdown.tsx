@@ -40,7 +40,7 @@ export function SelectDropdown({
   onChange,
   options,
   withSearch = true,
-  outlined = false,
+  outlined = true,
   disabled = false,
   optionLabel = "Label",
 }: SelectProps) {
@@ -215,7 +215,7 @@ export function SelectDropdown({
         ref={containerRef}
         id={id}
         tabIndex={0}
-        className={`${styles.container} ${outlined ? styles.outlined : ''} ${disabled ? styles.disabled : ''}`}
+        className={`${styles.container} ${!outlined ? styles.outlined : ''} ${disabled ? styles.disabled : ''}`}
         onClick={() => !disabled && setIsOpen(prev => !prev)}
       >
         <span className={styles.value}>
