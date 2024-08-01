@@ -1,5 +1,10 @@
-import { useEffect, useRef, useState } from "react";
-import styles from "./SelectDropdown.module.css";
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import styles from './SelectDropdown.module.css';
+import { CiSearch } from 'react-icons/ci';
+import { ImCancelCircle } from 'react-icons/im';
+import { IoIosArrowDown } from "react-icons/io";
+import { MdCancel } from "react-icons/md";
 
 export type SelectOption = {
   label: string;
@@ -18,9 +23,9 @@ type SingleSelectProps = {
   onChange: (value: SelectOption | undefined) => void;
 };
 
-type SelectProps = {
+export type SelectProps = {
   options: SelectOption[];
-  showSearch?: boolean;
+  withSearch?: boolean;
   id?: string;
   outlined?: boolean;
   disabled?: boolean;
@@ -28,12 +33,12 @@ type SelectProps = {
 } & (SingleSelectProps | MultipleSelectProps);
 
 export function SelectDropdown({
+  id,
   multiple,
   value,
   onChange,
   options,
-  showSearch = true,
-  id,
+  withSearch = true,
   outlined = false,
   disabled = false,
   optionLabel = "Label",
@@ -44,8 +49,14 @@ export function SelectDropdown({
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  function doesMatch(label: string, term: string) {
+    const words = term.toLowerCase().split(/\s+/).filter(Boolean);
+    const labelText = label.toLowerCase();
+    return words.every(word => labelText.includes(word));
+  }
+
   const filteredOptions = options.filter(option =>
-    option.label.toLowerCase().includes(searchTerm.toLowerCase())
+    doesMatch(option.label, searchTerm)
   );
 
   useEffect(() => {
@@ -59,10 +70,6 @@ export function SelectDropdown({
       }
     }
   }, [multiple, value, onChange]);
-
-  function clearOptions() {
-    multiple ? onChange([]) : onChange(undefined);
-  }
 
   function selectOption(option: SelectOption) {
     if (multiple) {
@@ -129,6 +136,77 @@ export function SelectDropdown({
     };
   }, [isOpen, highlightedIndex, filteredOptions]);
 
+  function highlightText(text: string, term: string) {
+    if (!term.trim()) return text;
+
+    const words = term.split(/\s+/).filter(Boolean).map(word => 
+      word.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&') 
+    );
+    const regex = new RegExp(`(${words.join('|')})`, 'gi');
+
+    const parts = text.split(regex);
+    return parts.map((part, index) =>
+      regex.test(part) ? (
+        <span key={index} className={styles.highlight}>{part}</span>
+      ) : (
+        part
+      )
+    );
+  }
+
+  function clearSearch() {
+    setSearchTerm("");
+    searchInputRef.current?.focus(); // Focus back on the input field
+  }
+
+  const dropdown = (
+    <ul className={`${styles.options} ${isOpen ? styles.show : ""}`}>
+      {withSearch && (
+        <li className={styles.searchContainer}>
+          <CiSearch className={styles.searchIcon} />
+          <input
+            ref={searchInputRef}
+            type="text"
+            placeholder="Search..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            onClick={e => e.stopPropagation()}
+            onFocus={() => setIsOpen(true)}
+            className={styles.searchInput}
+            disabled={disabled}
+          />
+          {searchTerm && ( // Only show the clear button if there's text in the search bar
+            <button onClick={clearSearch} className={styles.clearButton}>
+              <MdCancel />
+            </button>
+          )}
+        </li>
+      )}
+      {filteredOptions.length > 0 ? (
+        filteredOptions.map((option, index) => (
+          <li
+            onClick={e => {
+              e.stopPropagation();
+              if (!disabled) selectOption(option);
+            }}
+            onMouseEnter={() => setHighlightedIndex(index)}
+            key={option.value}
+            className={`${styles.option} ${
+              isOptionSelected(option) ? styles.selected : ""
+            } ${index === highlightedIndex ? styles.highlighted : ""}`}
+          >
+            {highlightText(option.label, searchTerm)}
+          </li>
+        ))
+      ) : (
+        <li className={styles.option}>No options found</li>
+      )}
+    </ul>
+  );
+
+  // Check if the portal-root element exists
+  const portalRoot = document.querySelector('#portal-root');
+
   return (
     <div className={styles.wrapper}>
       <label htmlFor={id} className={styles.label}>{optionLabel}</label>
@@ -142,69 +220,26 @@ export function SelectDropdown({
         <span className={styles.value}>
           {multiple
             ? (Array.isArray(value) ? value : []).map(v => (
-                <button
+                <div
                   key={v.value}
-                  onClick={e => {
-                    e.stopPropagation();
-                    if (!disabled) selectOption(v);
-                  }}
                   className={styles["option-badge"]}
-                  disabled={disabled}
                 >
                   {v.label}
-                  <span className={styles["remove-btn"]}>&times;</span>
-                </button>
+                  <button
+                    onClick={e => {
+                      e.stopPropagation();
+                      if (!disabled) selectOption(v);
+                    }}
+                    className={styles["remove-btn"]}
+                  >
+                    <ImCancelCircle />
+                  </button>
+                </div>
               ))
             : value?.label}
         </span>
-        <button
-          onClick={e => {
-            e.stopPropagation();
-            if (!disabled) clearOptions();
-          }}
-          className={styles["clear-btn"]}
-          disabled={disabled}
-        >
-          &times;
-        </button>
-        <div className={styles.divider}></div>
-        <div className={styles.caret}></div>
-        <ul className={`${styles.options} ${isOpen ? styles.show : ""}`}>
-          {showSearch && (
-            <li className={styles.searchContainer}>
-              <input
-                ref={searchInputRef}
-                type="text"
-                placeholder="Search..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                onClick={e => e.stopPropagation()}
-                onFocus={() => setIsOpen(true)}
-                className={styles.searchInput}
-                disabled={disabled}
-              />
-            </li>
-          )}
-          {filteredOptions.length > 0 ? (
-            filteredOptions.map((option, index) => (
-              <li
-                onClick={e => {
-                  e.stopPropagation();
-                  if (!disabled) selectOption(option);
-                }}
-                onMouseEnter={() => setHighlightedIndex(index)}
-                key={option.value}
-                className={`${styles.option} ${
-                  isOptionSelected(option) ? styles.selected : ""
-                } ${index === highlightedIndex ? styles.highlighted : ""}`}
-              >
-                {option.label}
-              </li>
-            ))
-          ) : (
-            <li className={styles.option}>No options found</li>
-          )}
-        </ul>
+        <IoIosArrowDown className={styles.arrowIcon} />
+        {isOpen && (portalRoot ? createPortal(dropdown, portalRoot) : dropdown)}
       </div>
     </div>
   );
