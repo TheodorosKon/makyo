@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Meta, StoryFn } from '@storybook/react';
 import { SelectDropdown, SelectOption, SelectProps } from './SelectDropdown';
 import './SelectDropdown.module.css'; // Import the CSS module for styling
+import React from 'react';
 
 // Define the default export for the Storybook metadata
 const meta: Meta<typeof SelectDropdown> = {

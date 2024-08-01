@@ -5,6 +5,7 @@ import { CiSearch } from 'react-icons/ci';
 import { ImCancelCircle } from 'react-icons/im';
 import { IoIosArrowDown } from "react-icons/io";
 import { MdCancel } from "react-icons/md";
+import React from 'react';
 
 export type SelectOption = {
   label: string;
